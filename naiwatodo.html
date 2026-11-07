@@ -13,6 +13,7 @@
 *{box-sizing:border-box}
 [hidden]{display:none !important}
 html,body{margin:0;padding:0}
+body.modal-open{overflow:hidden}
 body{
   background:var(--bg); color:var(--text);
   font:15px/1.5 "Microsoft YaHei UI","Microsoft YaHei","Segoe UI",sans-serif;
@@ -74,9 +75,14 @@ body{
 .row+.row{border-top:1px solid var(--line)}
 .group+.row{border-top:0}
 
+.grip{width:14px;flex:0 0 14px;color:#c9c0a8;cursor:grab;display:flex;align-items:center;
+  justify-content:center;font-size:13px;letter-spacing:-3px;user-select:none;touch-action:none;
+  margin-top:3px;opacity:.9}
+.grip:active{cursor:grabbing;color:var(--atext)}
+.list.nodrag .grip{opacity:.18;pointer-events:none}
+.row.dragging{opacity:.45}
 .check{width:20px;height:20px;border:1.4px solid #c9c0a8;border-radius:6px;background:#fff;
-  flex:0 0 20px;margin-top:2px;cursor:pointer;position:relative}
-.check.on{background:var(--accent);border-color:var(--accent)}
+  flex:0 0 20px;margin-top:2px;cursor:pointer;position:relative}.check.on{background:var(--accent);border-color:var(--accent)}
 .check.on::after{content:"";position:absolute;left:6px;top:2px;width:5px;height:10px;
   border:2px solid var(--ink);border-top:0;border-left:0;transform:rotate(42deg)}
 .check:hover{border-color:var(--dim)}
@@ -90,6 +96,9 @@ body{
 .due.over{color:var(--danger)}
 .created{flex-shrink:0;color:var(--muted)}
 .edit{width:100%;font:inherit;border:1px solid var(--dim);border-radius:6px;padding:4px 6px;outline:0}
+.tag{display:inline-block;background:var(--soft);color:var(--atext);border-radius:4px;padding:0 4px;margin-right:6px;font-size:11px;line-height:1.5}
+.chkrow{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub);margin:6px 0 2px;cursor:pointer}
+.chkrow input{width:16px;height:16px;accent-color:var(--accent)}
 
 .actions{display:flex;gap:2px;flex-shrink:0;opacity:0;transition:opacity .12s}
 .row:hover .actions{opacity:1}
@@ -126,7 +135,7 @@ body{
 .toast button{border:0;background:transparent;color:#f7cd5c;font:inherit;font-weight:700;cursor:pointer}
 
 /* 弹窗 */
-.mask{position:fixed;inset:0;background:rgba(40,32,10,.28);display:flex;align-items:center;justify-content:center;padding:20px;z-index:20}
+.mask{position:fixed;inset:0;background:rgba(40,32,10,.28);display:flex;align-items:center;justify-content:center;padding:20px;z-index:20;overscroll-behavior:contain}
 .modal{background:#fff;border-radius:14px;padding:20px;width:100%;max-width:420px;box-shadow:0 18px 50px rgba(0,0,0,.2)}
 .modal h3{margin:0 0 14px;font-size:14px;color:var(--sub);font-weight:400}
 .field{display:flex;gap:8px;margin-bottom:10px}
@@ -138,6 +147,27 @@ pre.preview{background:var(--bg);border:1px solid var(--border);border-radius:8p
 .frog{text-align:center}
 .frog img{width:100%;max-width:360px;border-radius:10px;display:block;margin:0 auto}
 .frog .cap{font-size:17px;font-weight:700;margin:14px 0 18px;color:var(--atext)}
+.frog .capsub{font-size:13px;color:var(--sub);margin:-10px 0 18px;line-height:1.5}
+
+/* 右下角教程按钮 */
+.fab{position:fixed;right:20px;bottom:20px;width:46px;height:46px;border-radius:50%;border:0;
+  background:var(--accent);color:var(--ink);font:700 20px/1 inherit;cursor:pointer;z-index:12;
+  box-shadow:0 6px 18px rgba(150,110,0,.28)}
+.fab:hover{background:#e6ac00}
+.tutlist{margin:0;padding-left:20px;font-size:13.5px;line-height:1.9;color:var(--text);max-height:60vh;overflow:auto}
+.tutlist b{color:var(--atext)}
+
+/* 教程弹窗：和清单一样的行样式 */
+.modal.tut{padding:18px 0 16px;max-height:88vh;display:flex;flex-direction:column}
+.modal.tut h3{padding:0 20px;margin-bottom:10px}
+.tlist{flex:1 1 auto;min-height:0;max-height:56vh;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y}
+.trow{display:flex;gap:12px;padding:11px 20px;border-top:1px solid var(--line)}
+.trow:first-child{border-top:0}
+.tnum{width:22px;height:22px;flex:0 0 22px;border-radius:50%;background:var(--soft);color:var(--atext);
+  font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.ttitle{font-size:14px;font-weight:700;color:var(--text)}
+.tdesc{font-size:12.5px;color:var(--sub);line-height:1.55;margin-top:2px}
+.modal.tut .rowbtns{padding:14px 20px 0;margin-top:0}
 .frog .cap.plain{color:var(--text)}
 .frog .rowbtns{justify-content:center;margin-top:0}
 </style>
@@ -193,6 +223,8 @@ pre.preview{background:var(--bg);border:1px solid var(--border);border-radius:8p
   <span id="toastText"></span>
   <button id="toastUndo" hidden>撤销</button>
 </div>
+
+<button id="helpBtn" class="fab" title="使用说明">?</button>
 
 <script>
 "use strict";
@@ -283,14 +315,32 @@ function weekdayIndex(ch) {
 }
 
 function parseQuick(text, now) {
-  const m = WHEN.exec(text);
-  if (!m || !m[0]) return { ok: false, text };
+  // “每天/每日”表示这是每天刷新的任务
+  let daily = false;
+  let work = text;
+  const dm = /(每天|每日)/.exec(work);
+  if (dm) {
+    daily = true;
+    work = work.slice(0, dm.index) + work.slice(dm.index + dm[0].length);
+  }
+
+  const m = WHEN.exec(work);
+  if (!m || !m[0]) {
+    // 只有“每天/每日”没写时间：归为打卡类，默认每天 09:00
+    if (!daily) return { ok: false, text, daily: false };
+    const cleanedOnly = work.replace(/^[\s，,、。；;：:\-—（）()]+|[\s，,、。；;：:\-—（）()]+$/g, "").trim();
+    if (!cleanedOnly) return { ok: false, text, daily: false };
+    const nine = new Date(startOfDay(now));
+    nine.setHours(9, 0, 0, 0);
+    if (nine <= now) nine.setDate(nine.getDate() + 1);
+    return { ok: true, due: nine.getTime(), text: cleanedOnly, daily: true };
+  }
   const g = m.groups;
 
   // “三点水”“四点底”这类偏旁名不算时间
   if (g.hour && !g.date && !g.period && !g.min) {
-    const next = text[m.index + m[0].length];
-    if (next === "水" || next === "底" || next === "点") return { ok: false, text };
+    const next = work[m.index + m[0].length];
+    if (next === "水" || next === "底" || next === "点") return { ok: false, text, daily: false };
   }
 
   let hour, minute;
@@ -350,12 +400,12 @@ function parseQuick(text, now) {
   due.setHours(hour, minute, 0, 0);
   if (!token && due <= now) due.setDate(due.getDate() + 1);
 
-  const cleaned = (text.slice(0, m.index) + text.slice(m.index + m[0].length))
+  const cleaned = (work.slice(0, m.index) + work.slice(m.index + m[0].length))
     .replace(/^[\s，,、。；;：:\-—（）()]+|[\s，,、。；;：:\-—（）()]+$/g, "")
     .trim();
-  if (!cleaned) return { ok: false, text };
+  if (!cleaned) return { ok: false, text, daily: false };
 
-  return { ok: true, due: due.getTime(), text: cleaned };
+  return { ok: true, due: due.getTime(), text: cleaned, daily: daily };
 }
 
 /* ---------- 显示格式 ---------- */
@@ -416,8 +466,8 @@ function buildView() {
   let list = state.items.filter(matches);
   if (filter === "active") list = list.filter((x) => !x.done);
   if (filter === "done") list = list.filter((x) => x.done);
-  list.sort((a, b) => (a.done === b.done ? b.createdAt - a.createdAt : (a.done ? 1 : -1)));
-  return list;
+  // 手动顺序：保持数组顺序，只把已完成的沉到底部
+  return list.filter((x) => !x.done).concat(list.filter((x) => x.done));
 }
 function buildGroups(list) {
   if (!list.length) return [];
@@ -473,6 +523,7 @@ function rowHtml(item) {
   const checkOn = batch ? sel : item.done;
 
   let meta = "";
+  if (item.daily) meta += '<span class="tag">每日</span>';
   if (item.dueAt) meta += '<span class="due ' + dueClass(item) + '">' + esc(fmtDue(item)) + "</span>";
   meta += '<span class="created">' + esc(fmtCreated(item.createdAt)) + "</span>";
 
@@ -484,6 +535,7 @@ function rowHtml(item) {
   }
 
   return '<div class="' + cls.join(" ") + '" data-id="' + item.id + '">' +
+    '<div class="grip" data-drag title="按住拖动排序">⋮⋮</div>' +
     '<div class="check ' + (checkOn ? "on" : "") + '" data-act="check"></div>' +
     '<div class="body"><div class="text" data-act="text">' + esc(item.text) + "</div>" +
     '<div class="meta">' + meta + "</div></div>" + actions + "</div>";
@@ -492,6 +544,7 @@ function rowHtml(item) {
 function render() {
   const view = buildView();
   const groups = buildGroups(view);
+  $("list").classList.toggle("nodrag", state.group !== "none" || batch);
 
   // 标签数量（跟随搜索）
   const matched = state.items.filter(matches);
@@ -563,8 +616,15 @@ function addItem(raw) {
   const text = raw.trim();
   if (!text) { toast("先写点内容再添加", false); return; }
   const p = parseQuick(text, new Date());
-  const item = { id: uid(), text: p.ok ? p.text : text, done: false, createdAt: nextCreatedAt(), dueAt: p.ok ? p.due : 0 };
-  state.items.push(item);
+  const item = {
+    id: uid(),
+    text: p.ok ? p.text : text,
+    done: false,
+    createdAt: nextCreatedAt(),
+    dueAt: p.ok ? p.due : 0,
+    daily: p.ok ? p.daily : false
+  };
+  state.items.unshift(item);
   if (filter === "done") filter = "all";
   if (search) { search = ""; $("searchInput").value = ""; $("searchBar").hidden = true; }
   save();
@@ -589,7 +649,7 @@ function toggleItem(id) {
 function deleteItem(id) {
   const idx = state.items.findIndex((x) => x.id === id);
   if (idx < 0) return;
-  lastUndo = [JSON.parse(JSON.stringify(state.items[idx]))];
+  lastUndo = [{ item: JSON.parse(JSON.stringify(state.items[idx])), index: idx }];
   state.items.splice(idx, 1);
   save(); render();
   toast("已删除 1 项", true);
@@ -597,11 +657,34 @@ function deleteItem(id) {
 }
 function undoDelete() {
   if (!lastUndo || !lastUndo.length) return;
-  lastUndo.forEach((it) => { if (!state.items.some((x) => x.id === it.id)) state.items.push(it); });
+  lastUndo.forEach((entry) => {
+    if (!state.items.some((x) => x.id === entry.item.id)) {
+      const at = Math.min(entry.index, state.items.length);
+      state.items.splice(at, 0, entry.item);
+    }
+  });
   lastUndo = null;
   save(); render();
   toast("已恢复", false);
   evaluateReward();
+}
+
+/* ---------- 每日任务：过了当天就顺延并把勾去掉 ---------- */
+function refreshDaily() {
+  const now = new Date();
+  const today = startOfDay(now);
+  let changed = false;
+  state.items.forEach((it) => {
+    if (!it.daily || !it.dueAt) return;
+    const due = new Date(it.dueAt);
+    if (startOfDay(due).getTime() >= today.getTime()) return;
+    const next = new Date(today);
+    next.setHours(due.getHours(), due.getMinutes(), 0, 0);
+    it.dueAt = next.getTime();
+    if (it.done) it.done = false;
+    changed = true;
+  });
+  if (changed) { save(); render(); }
 }
 
 /* ---------- 奖励 / 惩罚 ---------- */
@@ -625,12 +708,23 @@ function evaluateReward() {
   if (!allTodayDone()) return;
   frogFlow("reward");
 }
+function overdueDailyText() {
+  const now = Date.now();
+  const names = state.items
+    .filter((it) => it.daily && !it.done && it.dueAt > 0 && it.dueAt < now)
+    .map((it) => it.text);
+  if (!names.length) return "";
+  const shown = names.slice(0, 3);
+  let body = shown.join("、");
+  if (names.length > 3) body += " 等 " + names.length + " 件";
+  return "今天还没有" + body + "哦";
+}
 function checkPunish() {
   if (state.punishMuteDay === todayKey()) return;
   if (!hasOverdue()) return;
-  frogFlow("punish");
+  frogFlow("punish", overdueDailyText());
 }
-function frog(kind, withChoices) {
+function frog(kind, withChoices, extra) {
   const caption = {
     reward: "奶蛙告诉你你很强",
     punish: "奶蛙告诉你你有事没干完",
@@ -646,6 +740,7 @@ function frog(kind, withChoices) {
     mask.innerHTML = '<div class="modal frog">' +
       (img ? '<img src="' + img + '" alt="奶蛙">' : "") +
       '<div class="cap ' + (light ? "" : "plain") + '">' + esc(caption) + "</div>" +
+      (extra ? '<div class="capsub">' + esc(extra) + "</div>" : "") +
       '<div class="rowbtns">' +
       (withChoices
         ? '<button class="btn primary" data-pick="thanks">谢谢你奶蛙</button>' +
@@ -661,8 +756,8 @@ function frog(kind, withChoices) {
     });
   });
 }
-async function frogFlow(kind) {
-  const pick = await frog(kind, true);
+async function frogFlow(kind, extra) {
+  const pick = await frog(kind, true, extra);
   if (pick === "mute") {
     if (kind === "reward") state.rewardMuteDay = todayKey();
     else state.punishMuteDay = todayKey();
@@ -682,6 +777,7 @@ function openDueDialog(item) {
   mask.innerHTML = '<div class="modal">' +
     '<h3>什么时候到期</h3>' +
     '<div class="field"><input type="date" id="dueDate"><input type="time" id="dueTime"></div>' +
+    '<label class="chkrow"><input type="checkbox" id="dailyChk"> 每天刷新（第二天自动变回未完成）</label>' +
     '<div class="rowbtns" style="justify-content:flex-start;margin-top:8px">' +
     '<button class="btn sm" data-quick="today">今天 18:00</button>' +
     '<button class="btn sm" data-quick="tomorrow">明天 09:00</button></div>' +
@@ -692,8 +788,10 @@ function openDueDialog(item) {
   document.body.appendChild(mask);
   const dateEl = mask.querySelector("#dueDate");
   const timeEl = mask.querySelector("#dueTime");
+  const dailyEl = mask.querySelector("#dailyChk");
   dateEl.value = dayKey(cur);
   timeEl.value = pad2(cur.getHours()) + ":" + pad2(cur.getMinutes());
+  dailyEl.checked = !!item.daily;
 
   mask.addEventListener("click", (e) => {
     const q = e.target.closest("[data-quick]");
@@ -707,12 +805,13 @@ function openDueDialog(item) {
     const b = e.target.closest("[data-do]");
     if (!b) return;
     if (b.dataset.do === "cancel") { mask.remove(); return; }
-    if (b.dataset.do === "clear") { item.dueAt = 0; save(); render(); mask.remove(); evaluateReward(); return; }
+    if (b.dataset.do === "clear") { item.dueAt = 0; item.daily = false; save(); render(); mask.remove(); evaluateReward(); return; }
     if (!dateEl.value || !timeEl.value) { return; }
     const [y, m, d] = dateEl.value.split("-").map(Number);
     const [hh, mm] = timeEl.value.split(":").map(Number);
     const due = new Date(y, m - 1, d, hh, mm, 0, 0);
     item.dueAt = due.getTime();
+    item.daily = dailyEl.checked;
     save(); render(); mask.remove(); evaluateReward();
   });
 }
@@ -771,6 +870,72 @@ function openSummary() {
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
     mask.remove();
     toast("已导出 " + dateEl.value + ".md", false);
+  });
+}
+
+/* ---------- 拖拽排序 ---------- */
+let dragId = null;
+
+function moveItem(fromId, toId) {
+  const from = state.items.findIndex((x) => x.id === fromId);
+  const to = state.items.findIndex((x) => x.id === toId);
+  if (from < 0 || to < 0 || from === to) return;
+  if (state.items[from].done !== state.items[to].done) return;
+  const moved = state.items.splice(from, 1)[0];
+  state.items.splice(to, 0, moved);
+  save();
+  render();
+  const again = document.querySelector('.row[data-id="' + fromId + '"]');
+  if (again) again.classList.add("dragging");
+}
+
+function onDragMove(e) {
+  if (!dragId) return;
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const row = el && el.closest ? el.closest(".row") : null;
+  if (!row) return;
+  const targetId = row.dataset.id;
+  if (!targetId || targetId === dragId) return;
+  moveItem(dragId, targetId);
+}
+
+function onDragEnd() {
+  window.removeEventListener("pointermove", onDragMove);
+  dragId = null;
+  const rows = document.querySelectorAll(".row.dragging");
+  for (let i = 0; i < rows.length; i++) rows[i].classList.remove("dragging");
+  save();
+  render();
+}
+
+const TUTORIAL = [
+  ["添加", "输入框写完按回车。话里带时间会自动识别，例如「明天下午三点半开会」→ 存成「开会」，到期明天 15:30。"],
+  ["打卡任务", "话里带「每天 / 每日」就自动变成打卡：第二天自动变回未完成，时间顺延。"],
+  ["完成", "点左边方框打勾，再点一次取消；做完的会沉到列表下面。"],
+  ["改 / 删", "双击文字改内容；鼠标移到那行，点右侧 × 删除，5 秒内可以撤销。"],
+  ["拖动排序", "按住每行最左边的 ⋮⋮ 上下拖（桌面版按住整行）。分组状态下不能拖。"],
+  ["筛选 / 分组", "顶部三个标签切换全部 / 未完成 / 已完成；「分组」可以按到期或按添加日期分段。"],
+  ["搜索", "点「搜索」或按 Ctrl+F，输入就筛，能和筛选、分组一起用。"],
+  ["到期时间", "鼠标移到那行，点右侧钟表图标：选日期和时刻，或勾「每天刷新」。"],
+  ["奶蛙提醒", "今天的事全做完，奶蛙夸你；有过期没做的，打开时奶蛙提醒你，还会点名没做的打卡任务。"],
+  ["导出", "点「总结」，把某一天新增的待办导出成 markdown，用来写周报。"],
+  ["暂停与恢复", "在奶蛙弹窗里选「不要打扰我」可以停当天的提醒；工具栏下的黄条点「恢复」就能重新开启。"]
+];
+
+function openTutorial() {
+  const mask = document.createElement("div");
+  mask.className = "mask";
+  const rows = TUTORIAL.map(function (t, i) {
+    return '<div class="trow"><div class="tnum">' + (i + 1) + "</div>" +
+      '<div class="tbody"><div class="ttitle">' + esc(t[0]) + "</div>" +
+      '<div class="tdesc">' + esc(t[1]) + "</div></div></div>";
+  }).join("");
+  mask.innerHTML = '<div class="modal tut"><h3>第一次用？这里把功能过一遍</h3>' +
+    '<div class="tlist">' + rows + "</div>" +
+    '<div class="rowbtns"><button class="btn primary" data-do="ok">知道了</button></div></div>';
+  document.body.appendChild(mask);
+  mask.addEventListener("click", function (e) {
+    if (e.target === mask || e.target.closest('[data-do="ok"]')) mask.remove();
   });
 }
 
@@ -851,7 +1016,10 @@ function wire() {
     const ids = [...selected];
     if (!ids.length) return;
     if (!confirm("确定删除选中的 " + ids.length + " 项待办吗？删除后 5 秒内还能撤销。")) return;
-    lastUndo = state.items.filter((x) => selected.has(x.id)).map((x) => JSON.parse(JSON.stringify(x)));
+    lastUndo = state.items
+      .map((x, i) => ({ item: x, index: i }))
+      .filter((e) => selected.has(e.item.id))
+      .map((e) => ({ item: JSON.parse(JSON.stringify(e.item)), index: e.index }));
     state.items = state.items.filter((x) => !selected.has(x.id));
     selected.clear();
     batch = false;
@@ -860,8 +1028,7 @@ function wire() {
     evaluateReward();
   });
 
-  $("restoreBtn").addEventListener("click", async () => {
-    state.rewardMuteDay = "";
+  $("restoreBtn").addEventListener("click", async () => {    state.rewardMuteDay = "";
     state.punishMuteDay = "";
     save(); render();
     await frog("restore", false);
@@ -869,6 +1036,7 @@ function wire() {
 
   $("toastUndo").addEventListener("click", () => { undoDelete(); $("toast").hidden = true; });
   $("toast").addEventListener("click", (e) => { if (e.target === $("toast")) $("toast").hidden = true; });
+  $("helpBtn").addEventListener("click", openTutorial);
 
   $("list").addEventListener("click", (e) => {
     const row = e.target.closest(".row");
@@ -886,6 +1054,19 @@ function wire() {
       const it = state.items.find((x) => x.id === id);
       if (it) openDueDialog(it);
     }
+  });
+
+  $("list").addEventListener("pointerdown", (e) => {
+    const grip = e.target.closest("[data-drag]");
+    if (!grip || state.group !== "none" || batch) return;
+    e.preventDefault();
+    const row = grip.closest(".row");
+    if (!row) return;
+    dragId = row.dataset.id;
+    row.classList.add("dragging");
+    window.addEventListener("pointermove", onDragMove);
+    window.addEventListener("pointerup", onDragEnd, { once: true });
+    window.addEventListener("pointercancel", onDragEnd, { once: true });
   });
 
   $("list").addEventListener("dblclick", (e) => {
@@ -939,11 +1120,31 @@ function wire() {
 }
 
 /* ---------- 启动 ---------- */
+// 有弹窗时锁住页面滚动，免得滚轮滚到后面的清单
+new MutationObserver(function () {
+  document.body.classList.toggle("modal-open", !!document.querySelector(".mask"));
+}).observe(document.body, { childList: true });
+
 load();
 wire();
+refreshDaily();
 render();
 setTimeout(checkPunish, 300);
+setInterval(refreshDaily, 60000);
+document.addEventListener("visibilitychange", function () {
+  if (!document.hidden) refreshDaily();
+});
 setInterval(() => { if (state.items.some((x) => x.dueAt)) render(); }, 60000);
+
+// 第一次打开自动弹教程；之后点右下角的 ? 再看
+try {
+  if (!localStorage.getItem("todoapp.tutorial.v1")) {
+    localStorage.setItem("todoapp.tutorial.v1", "1");
+    setTimeout(function () {
+      if (!document.querySelector(".mask")) openTutorial();
+    }, 1600);
+  }
+} catch (e) { }
 </script>
 </body>
 </html>
