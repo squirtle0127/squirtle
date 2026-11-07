@@ -102,6 +102,10 @@ body{
   .tabs{flex-basis:100%}
   .tools{width:100%;justify-content:space-between}
   .tools .btn{flex:1}
+  /* 窄屏：到期信息单独占一行，不再被省略号截断 */
+  .meta{display:block;line-height:1.5}
+  .due{display:block;white-space:normal;overflow:visible;text-overflow:clip}
+  .created{display:block;text-align:right}
 }
 .act{border:0;background:transparent;color:var(--muted);width:26px;height:26px;border-radius:6px;
   cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center}
@@ -387,10 +391,12 @@ function dueClass(item) {
 }
 function fmtCreated(ts) {
   const d = new Date(ts), now = new Date();
-  if (dayKey(d) === dayKey(now)) return "今天添加";
-  if (dayKey(d) === dayKey(new Date(startOfDay(now).getTime() - 86400000))) return "昨天添加";
+  const narrow = window.matchMedia && window.matchMedia("(max-width: 560px)").matches;
+  const suffix = narrow ? "" : "添加";
+  if (dayKey(d) === dayKey(now)) return "今天" + suffix;
+  if (dayKey(d) === dayKey(new Date(startOfDay(now).getTime() - 86400000))) return "昨天" + suffix;
   const y = d.getFullYear() === now.getFullYear() ? "" : d.getFullYear() + "年";
-  return y + (d.getMonth() + 1) + "月" + d.getDate() + "日添加";
+  return y + (d.getMonth() + 1) + "月" + d.getDate() + "日" + suffix;
 }
 function fmtHint(ts) {
   const d = new Date(ts), now = new Date();
