@@ -689,6 +689,12 @@ function refreshDaily() {
 
 /* ---------- 奖励 / 惩罚 ---------- */
 function allTodayDone() {
+  if (!state.items.length) return false;
+
+  // ① 整个清单都做完了
+  if (!state.items.some((it) => !it.done)) return true;
+
+  // ② 至少有一条今天到期，且今天到期的都做完了
   const today = todayKey();
   let dueToday = 0;
   for (const it of state.items) {
