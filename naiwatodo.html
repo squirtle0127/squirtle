@@ -1,9 +1,9 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>待办清单</title>
+<title>个人事项管理工具</title>
 <style>
 :root{
   --bg:#fdfbf2; --card:#fff; --text:#2b2721; --sub:#6f6a5e; --muted:#a39c8b;
@@ -170,53 +170,316 @@ pre.preview{background:var(--bg);border:1px solid var(--border);border-radius:8p
 .modal.tut .rowbtns{padding:14px 20px 0;margin-top:0}
 .frog .cap.plain{color:var(--text)}
 .frog .rowbtns{justify-content:center;margin-top:0}
+.frog.noimg{padding-top:8px}
+.frog.noimg .cap{margin:22px 0 20px}
+
+/* ---------- 三个模块 ---------- */
+.modnav{display:flex;gap:8px;margin-bottom:14px}
+.modnav button{flex:1;padding:9px 0;border-radius:999px;border:1px solid var(--line);background:#fff;
+  color:var(--sub);font:600 14px/1 inherit;cursor:pointer}
+.modnav button.on{background:var(--accent);border-color:var(--accent);color:var(--ink)}
+
+/* 备忘录 */
+.mrow{display:flex;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);
+  align-items:flex-start;cursor:pointer}
+.mrow:last-child{border-bottom:0}
+.mtext{flex:1;min-width:0;font-size:14.5px;line-height:1.55;color:var(--text);
+  white-space:pre-wrap;word-break:break-word}
+.mtime{flex:0 0 auto;font-size:12px;color:var(--muted);margin-top:2px}
+.mdel{border:0;background:transparent;color:#c9c0a8;font-size:18px;cursor:pointer;padding:0 2px;line-height:1}
+.mdel:hover{color:#b04a3a}
+.mgo{border:0;background:transparent;color:var(--dim);font-size:15px;cursor:pointer;padding:0 2px;line-height:1}
+.mgo:hover{color:var(--atext)}
+.memotools{display:flex;align-items:center;gap:10px;margin:-4px 2px 10px}
+.memotip{font-size:12px;color:var(--muted)}
+.memotools .btn{margin-left:auto}
+
+/* AI 提取待办的确认框 */
+.exrow{display:flex;gap:8px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
+.exrow:last-child{border-bottom:0}
+.exrow input[type=checkbox]{width:16px;height:16px;margin-top:4px;accent-color:var(--accent);flex:0 0 16px}
+.exbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.exbody input[type=text]{font:inherit;font-size:13.5px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;outline:0}
+.exbody input[type=datetime-local]{font:inherit;font-size:12px;border:1px solid var(--line);border-radius:8px;padding:5px 8px;color:var(--sub);background:#fff;width:100%}
+.exlist{max-height:46vh;overflow:auto;margin:10px 0 4px}
+
+/* 日记 */
+.diaryhead{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.diaryhead input[type=date]{flex:0 0 auto;font:inherit;font-size:13px;border:1px solid var(--line);
+  border-radius:8px;padding:6px 8px;background:#fff;color:var(--text)}
+.diaryinfo{margin-left:auto;font-size:12px;color:var(--muted)}
+.diarycard{padding:12px 14px}
+#diaryText{width:100%;min-height:210px;border:0;outline:0;resize:vertical;background:transparent;
+  font:inherit;font-size:14.5px;line-height:1.7;color:var(--text)}
+.drow{display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+.drow:last-child{border-bottom:0}
+.drow.on{background:var(--soft)}
+.ddate{flex:0 0 66px;font-size:12px;color:var(--atext);font-weight:700;padding-top:2px}
+.dprev{flex:1;min-width:0;font-size:13px;color:var(--sub);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+
+.modal .memoedit{width:100%;min-height:180px;border:1px solid var(--line);border-radius:10px;
+  padding:10px 12px;font:inherit;font-size:14px;line-height:1.6;resize:vertical;outline:0}
+
+.aihint{font-size:12px;line-height:1.6;color:var(--muted);margin:8px 0 2px}
+.aifield{display:flex;flex-direction:column;gap:4px;margin-top:10px}
+.aifield label{font-size:12px;color:var(--muted)}
+.aifield input{font:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;
+  padding:8px 10px;outline:0;background:#fff}
+.aifield input:focus{border-color:var(--accent)}
+
+/* ---------- 两层导航：清单 / 单词本 ---------- */
+.brand{display:flex;align-items:baseline;gap:10px;margin:0 2px 10px}
+.brandname{font-size:17px;font-weight:800;color:var(--text);letter-spacing:.5px}
+.brandsub{font-size:11.5px;color:var(--muted)}
+.mainnav{display:flex;gap:8px;margin-bottom:10px}
+.mainnav button{flex:1;padding:11px 0;border-radius:12px;border:1px solid var(--line);background:#fff;
+  color:var(--sub);font:700 15px/1 inherit;cursor:pointer}
+.mainnav button.on{background:var(--accent);border-color:var(--accent);color:var(--ink)}
+
+/* 单词本 */
+.wordpaste{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+#wordInput{width:100%;box-sizing:border-box;min-height:110px;border:0;outline:0;resize:vertical;
+  font:inherit;font-size:14px;line-height:1.6;background:transparent;color:var(--text)}
+.wordtools{display:flex;align-items:center;gap:10px;margin-top:8px}
+.wordtools .btn{margin-left:auto}
+.wordhead{display:flex;align-items:center;gap:10px;margin:4px 2px 8px}
+.wordhead .btn{margin-left:auto}
+.wrow{display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);align-items:flex-start}
+.wrow:last-child{border-bottom:0}
+.wbody{flex:1;min-width:0}
+.wword{font-size:15px;font-weight:700;color:var(--text)}
+.wmean{font-size:12.5px;color:var(--sub);margin-top:3px;line-height:1.55}
+.wex{font-size:12px;color:var(--muted);margin-top:4px;font-style:italic;line-height:1.5}
+.wdel{border:0;background:transparent;color:#c9c0a8;font-size:18px;cursor:pointer;padding:0 2px;line-height:1}
+.wdel:hover{color:#b04a3a}
+.wcheckrow{display:flex;gap:10px;align-items:center;padding:9px 2px;border-bottom:1px solid var(--line)}
+.wcheckrow:last-child{border-bottom:0}
+.wcheckrow input{width:16px;height:16px;accent-color:var(--accent);flex:0 0 16px}
+.wcheckrow .wt{font-size:14px;color:var(--text)}
+
+/* ---------- 复习 / 统计 / 小窗 ---------- */
+.brandbtn{margin-left:auto;padding:6px 10px !important;font-size:12px !important}
+
+.review{margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px}
+.rvhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.rvprog{font-size:12.5px;color:var(--muted)}
+.rvcard{min-height:170px;border:1px dashed var(--dim);border-radius:12px;background:var(--soft);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  padding:18px;cursor:pointer;text-align:center}
+.rvword{font-size:26px;font-weight:800;color:var(--text);letter-spacing:.5px}
+.rvback{display:flex;flex-direction:column;gap:6px}
+.rvmean{font-size:15px;color:var(--text)}
+.rvex{font-size:12.5px;color:var(--muted);font-style:italic}
+.rvhint{font-size:11.5px;color:var(--muted)}
+.rvactions{display:flex;gap:8px;margin-top:12px}
+.rvactions .btn{flex:1}
+.rvdone{text-align:center;padding:20px 0}
+.rvdonebig{font-size:20px;font-weight:800;color:var(--text)}
+.rvdonesub{font-size:13px;color:var(--muted);margin:8px 0 16px}
+
+.statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+.statcell{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+.statnum{font-size:24px;font-weight:800;color:var(--atext)}
+.statlab{font-size:12px;color:var(--muted);margin-top:4px}
+.statcard{padding:14px 16px;margin-bottom:12px}
+.stathead{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px}
+.statbars{display:flex;align-items:flex-end;gap:8px;height:96px}
+.sbarwrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
+  height:100%;justify-content:flex-end}
+.sbarnum{font-size:10px;color:var(--atext);height:12px}
+.sbar{width:100%;background:var(--accent);border-radius:6px 6px 0 0;min-height:3px}
+.sbarlab{font-size:10px;color:var(--muted)}
+.statlist{display:flex;flex-direction:column;gap:8px}
+.statrow{display:flex;justify-content:space-between;font-size:13px;color:var(--sub)}
+.statrow b{color:var(--text);font-weight:700}
+
+.widget{position:fixed;right:16px;bottom:78px;width:212px;background:#fff;border:1px solid var(--line);
+  border-radius:14px;box-shadow:0 10px 28px rgba(150,120,40,.18);z-index:30;overflow:hidden}
+.whead{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;
+  background:var(--soft);cursor:grab;user-select:none;touch-action:none}
+.whead:active{cursor:grabbing}
+.wtitle{font-size:12.5px;font-weight:700;color:var(--atext)}
+.wx{font-size:14px;color:var(--atext);cursor:pointer;padding:0 4px}
+.wbody{padding:10px 12px 12px;font-size:12.5px;color:var(--text);line-height:1.6}
+.wbody .wnum{font-size:20px;font-weight:800;color:var(--atext)}
+.wbody .wline{color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wbody .wgo{display:inline-block;margin-top:8px;font-size:12px;color:var(--atext);font-weight:700;cursor:pointer}
+.widgetmini{position:fixed;right:20px;bottom:78px;width:48px;height:48px;border-radius:50%;border:0;
+  background:var(--accent);color:var(--ink);font:700 16px/1 inherit;cursor:pointer;z-index:30;
+  box-shadow:0 6px 18px rgba(150,110,0,.28)}
+body.reviewing .widget,body.reviewing .widgetmini{display:none}
+
+/* 备份按钮与 key 显示 */
+.navmini{flex:0 0 auto !important;width:auto !important;padding:9px 12px !important;font-size:13px !important}
+.keybox{width:100%;box-sizing:border-box;min-height:120px;font-family:Consolas,monospace;font-size:11px;
+  line-height:1.5;border:1px solid var(--line);border-radius:10px;padding:10px;resize:vertical;outline:0;
+  word-break:break-all;background:#fbfaf5;color:var(--text)}
+.keylab{font-size:12px;color:var(--muted);margin:6px 0 4px}
 </style>
 </head>
 <body>
 <div class="app">
-  <div class="addbar">
-    <span class="plus">＋</span>
-    <input id="addInput" maxlength="200" placeholder="添加一件待办，回车即可">
-    <button id="addBtn" class="btn primary">添加</button>
-  </div>
-  <div id="hint" class="hint" hidden></div>
+  <div class="brand"><span class="brandname">个人事项管理工具</span><span class="brandsub">待办 · 备忘 · 日记 · 单词</span><button id="setBtn" class="navmini brandbtn">设置</button><button id="widgetToggle" class="navmini">挂件</button></div>
+  <nav class="mainnav" id="mainNav">
+    <button data-main="list" class="on">清单</button>
+    <button data-main="word">单词本</button>
+    <button data-main="stats">统计</button>
+  </nav>
 
-  <div id="searchBar" class="searchbar" hidden>
-    <span>🔍</span>
-    <input id="searchInput" maxlength="100" placeholder="搜索待办，输入就会筛选">
-    <button id="searchClose" class="x" title="退出搜索">×</button>
-  </div>
+  <div id="view-list">
+  <nav class="modnav" id="modNav">
+    <button data-mod="todo" class="on">待办</button>
+    <button data-mod="memo">备忘录</button>
+    <button data-mod="diary">日记</button>
+    <button id="backupBtn" class="navmini" title="导出 / 导入备份">备份</button>
+  </nav>
 
-  <div class="toolbar">
-    <div class="tabs" id="tabs"></div>
-    <div class="tools">
-      <button id="searchBtn" class="btn ghost sm">搜索</button>
-      <button id="groupBtn" class="btn ghost sm">分组</button>
-      <button id="summaryBtn" class="btn ghost sm">总结</button>
-      <button id="batchBtn" class="btn ghost sm">批量</button>
+  <section id="view-todo">
+    <div class="addbar">
+      <span class="plus">＋</span>
+      <input id="addInput" maxlength="200" placeholder="添加一件待办，回车即可">
+      <button id="addBtn" class="btn primary">添加</button>
     </div>
-  </div>
+    <div id="hint" class="hint" hidden></div>
 
-  <div id="muteBar" class="mutebar" hidden>
-    <span id="muteText"></span>
-    <button id="restoreBtn" class="btn primary sm">恢复</button>
-  </div>
-
-  <div class="card">
-    <div id="list" class="list"></div>
-    <div id="empty" class="empty" hidden>
-      <div class="big" id="emptyTitle"></div>
-      <div id="emptySub"></div>
+    <div id="searchBar" class="searchbar" hidden>
+      <span>🔍</span>
+      <input id="searchInput" maxlength="100" placeholder="搜索待办，输入就会筛选">
+      <button id="searchClose" class="x" title="退出搜索">×</button>
     </div>
+
+    <div class="toolbar">
+      <div class="tabs" id="tabs"></div>
+      <div class="tools">
+        <button id="searchBtn" class="btn ghost sm">搜索</button>
+        <button id="groupBtn" class="btn ghost sm">分组</button>
+        <button id="summaryBtn" class="btn ghost sm">总结</button>
+        <button id="batchBtn" class="btn ghost sm">批量</button>
+      </div>
+    </div>
+
+    <div id="muteBar" class="mutebar" hidden>
+      <span id="muteText"></span>
+      <button id="restoreBtn" class="btn primary sm">恢复</button>
+    </div>
+
+    <div class="card">
+      <div id="list" class="list"></div>
+      <div id="empty" class="empty" hidden>
+        <div class="big" id="emptyTitle"></div>
+        <div id="emptySub"></div>
+      </div>
+    </div>
+
+    <div id="batchBar" class="batchbar" hidden>
+      <span id="batchInfo">已选 0 项</span>
+      <div style="display:flex;gap:8px">
+        <button id="selectAllBtn" class="btn sm">全选</button>
+        <button id="deleteSelBtn" class="btn danger sm">删除选中</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-memo" hidden>
+    <div class="addbar">
+      <span class="plus">＋</span>
+      <input id="memoInput" maxlength="120" placeholder="记一条备忘录，回车即可">
+      <button id="memoAdd" class="btn primary">添加</button>
+    </div>
+    <div class="memotools">
+      <span class="memotip">只记下来，不会自动变待办</span>
+      <button id="aiExtract" class="btn ghost sm">AI 提取待办</button>
+    </div>
+    <div class="card">
+      <div id="memoList" class="list"></div>
+      <div id="memoEmpty" class="empty" hidden>
+        <div class="big">还没有备忘录</div>
+        <div>随手记一句，比如「周三带学生证」</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-diary" hidden>
+    <div class="diaryhead">
+      <input type="date" id="diaryDate">
+      <span id="diaryInfo" class="diaryinfo">0 字</span>
+      <button id="aiBtn" class="btn ghost sm">AI 生成日记</button>
+      <button id="diarySave" class="btn primary">保存</button>
+    </div>
+    <div class="card diarycard">
+      <textarea id="diaryText" placeholder="今天发生了什么？写下来吧。"></textarea>
+    </div>
+    <div class="card">
+      <div id="diaryList" class="list"></div>
+      <div id="diaryEmpty" class="empty" hidden>
+        <div class="big">还没有日记</div>
+        <div>选个日期，写第一句</div>
+      </div>
+    </div>
+  </section>
   </div>
 
-  <div id="batchBar" class="batchbar" hidden>
-    <span id="batchInfo">已选 0 项</span>
-    <div style="display:flex;gap:8px">
-      <button id="selectAllBtn" class="btn sm">全选</button>
-      <button id="deleteSelBtn" class="btn danger sm">删除选中</button>
+  <section id="view-word" hidden>
+    <div class="wordpaste">
+      <textarea id="wordInput" placeholder="把英文段落、题目、文章粘到这里，点下面的按钮提取里面的四六级单词"></textarea>
+      <div class="wordtools">
+        <span id="wordTip" class="memotip">支持一整篇文章，自动去重</span>
+        <button id="wordExtract" class="btn primary">提取单词</button>
+      </div>
     </div>
-  </div>
+
+    <div class="wordhead">
+      <span id="wordStat" class="memotip">单词本 0 个</span>
+      <button id="wordAiFill" class="btn ghost sm">AI 补全释义</button>
+      <button id="wordReview" class="btn primary sm">开始复习</button>
+    </div>
+
+    <div class="card">
+      <div id="wordList" class="list"></div>
+      <div id="wordEmpty" class="empty" hidden>
+        <div class="big">单词本还是空的</div>
+        <div>粘贴一段英文，提取不会的词</div>
+      </div>
+    </div>
+
+    <div id="reviewPanel" class="review" hidden>
+      <div class="rvhead">
+        <span id="rvProgress" class="rvprog">1 / 10</span>
+        <button id="rvQuit" class="btn ghost sm">退出复习</button>
+      </div>
+      <div id="rvCard" class="rvcard">
+        <div id="rvWord" class="rvword">abandon</div>
+        <div id="rvBack" class="rvback" hidden>
+          <div id="rvMean" class="rvmean">v. 放弃；抛弃</div>
+          <div id="rvEx" class="rvex">He abandoned the plan.</div>
+        </div>
+        <div id="rvHint" class="rvhint">点一下卡片看释义</div>
+      </div>
+      <div id="rvActions" class="rvactions" hidden>
+        <button class="btn ghost" data-grade="0">不认识</button>
+        <button class="btn ghost" data-grade="1">模糊</button>
+        <button class="btn primary" data-grade="2">认识</button>
+      </div>
+      <div id="rvDone" class="rvdone" hidden>
+        <div class="rvdonebig">复习完了</div>
+        <div id="rvDoneSub" class="rvdonesub"></div>
+        <button id="rvDoneBtn" class="btn primary">回到单词本</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-stats" hidden>
+    <div class="statgrid" id="statGrid"></div>
+    <div class="card statcard">
+      <div class="stathead">最近 7 天完成的待办</div>
+      <div id="statBars" class="statbars"></div>
+    </div>
+    <div class="card statcard">
+      <div class="stathead">其他数字</div>
+      <div id="statList" class="statlist"></div>
+    </div>
+  </section>
 </div>
 
 <div id="toast" class="toast" hidden>
@@ -225,6 +488,15 @@ pre.preview{background:var(--bg);border:1px solid var(--border);border-radius:8p
 </div>
 
 <button id="helpBtn" class="fab" title="使用说明">?</button>
+
+<div id="widget" class="widget" hidden>
+  <div class="whead" id="widgetHead">
+    <span class="wtitle" id="widgetTitle">今天</span>
+    <span class="wx" id="widgetClose" title="收起">—</span>
+  </div>
+  <div class="wbody" id="widgetBody"></div>
+</div>
+<button id="widgetMini" class="widgetmini" hidden>0</button>
 
 <script>
 "use strict";
@@ -241,13 +513,16 @@ const IMG = {
 const KEY = "todoapp.v1";
 const $ = (id) => document.getElementById(id);
 
-let state = { items: [], group: "none", rewardMuteDay: "", punishMuteDay: "" };
+let state = { items: [], group: "none", rewardMuteDay: "", punishMuteDay: "", memos: [], diaries: [], words: [] };
 let filter = "all";
 let search = "";
 let batch = false;
 let selected = new Set();
 let lastUndo = null;
 let undoTimer = null;
+let toastAction = null;
+let currentMod = "todo";
+let diaryDate = "";
 
 /* ---------- 工具 ---------- */
 const pad2 = (n) => (n < 10 ? "0" : "") + n;
@@ -272,11 +547,15 @@ function load() {
     state.group = d.group === "due" || d.group === "created" ? d.group : "none";
     state.rewardMuteDay = d.rewardMuteDay || "";
     state.punishMuteDay = d.punishMuteDay || "";
+    state.memos = (d.memos || []).filter((x) => x && typeof x.text === "string");
+    state.diaries = (d.diaries || []).filter((x) => x && typeof x.date === "string");
+    state.words = (d.words || []).filter((x) => x && typeof x.w === "string");
   } catch (e) { /* 数据坏了就当空的，不覆盖原文件 */ }
 }
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); }
   catch (e) { toast("保存失败：" + e.message, false); }
+  try { renderWidget(); } catch (e) { }
 }
 
 /* ---------- 自然语言时间 ---------- */
@@ -643,6 +922,7 @@ function toggleItem(id) {
     return;
   }
   it.done = !it.done;
+  it.doneAt = it.done ? Date.now() : 0;
   save(); render();
   evaluateReward();
 }
@@ -689,21 +969,9 @@ function refreshDaily() {
 
 /* ---------- 奖励 / 惩罚 ---------- */
 function allTodayDone() {
+  // 只在“全部事项都完成”时给奖励；取消勾选不会触发
   if (!state.items.length) return false;
-
-  // ① 整个清单都做完了
-  if (!state.items.some((it) => !it.done)) return true;
-
-  // ② 至少有一条今天到期，且今天到期的都做完了
-  const today = todayKey();
-  let dueToday = 0;
-  for (const it of state.items) {
-    if (!it.dueAt) continue;
-    if (dayKey(new Date(it.dueAt)) !== today) continue;
-    dueToday++;
-    if (!it.done) return false;
-  }
-  return dueToday > 0;
+  return !state.items.some((it) => !it.done);
 }
 function hasOverdue() {
   const now = Date.now();
@@ -734,16 +1002,16 @@ function frog(kind, withChoices, extra) {
   const caption = {
     reward: "奶蛙告诉你你很强",
     punish: "奶蛙告诉你你有事没干完",
-    thanks: "（捧腹大笑）我们一起努力",
+    thanks: "我们一起努力",
     mute: "好吧今天我不打扰你了",
     restore: "我又来监督你了"
   }[kind];
   return new Promise((resolve) => {
     const mask = document.createElement("div");
     mask.className = "mask";
-    const img = IMG[kind] || "";
+    const img = (kind === "thanks" || kind === "mute") ? "" : (IMG[kind] || "");
     const light = kind === "reward" || kind === "thanks" || kind === "restore";
-    mask.innerHTML = '<div class="modal frog">' +
+    mask.innerHTML = '<div class="modal frog' + (img ? "" : " noimg") + '">' +
       (img ? '<img src="' + img + '" alt="奶蛙">' : "") +
       '<div class="cap ' + (light ? "" : "plain") + '">' + esc(caption) + "</div>" +
       (extra ? '<div class="capsub">' + esc(extra) + "</div>" : "") +
@@ -915,6 +1183,16 @@ function onDragEnd() {
 }
 
 const TUTORIAL = [
+  ["两个总功能", "顶部「清单」和「单词本」：清单里是待办、备忘录、日记；单词本用来攒四六级词。"],
+  ["单词本", "粘贴一段英文 → 提取单词 → 勾选要的加入；配了 AI 会自动写词性、释义和例句。"],
+  ["单词复习", "单词本右上角「开始复习」：卡片先想意思，点一下看答案，再选认识 / 模糊 / 不认识。认识的会隔几天再出现。"],
+  ["统计", "顶部「统计」看今天完成多少、总完成率、连续天数、待复习单词，还有最近 7 天的柱状图。"],
+  ["小窗挂件", "右上角「挂件」开关：一个可拖动的小窗，显示还剩几件事和待复习单词数，拖到不挡路的地方就行。"],
+  ["三个模块", "清单里切换「待办 / 备忘录 / 日记」，三边数据各自独立保存。"],
+  ["备忘录", "写一句话回车即存，只记录、不会自动变待办。想变成待办时点「AI 提取待办」。"],
+  ["日记", "选日期写正文，点保存；下面的列表可以翻回以前某天继续改。"],
+  ["AI 写日记", "点「AI 生成日记」，它会读当天的待办和备忘录，写一段带鼓励的日记。首次使用要先点右上角「设置」填 API 密钥。"],
+  ["备份与恢复", "点右上角「备份」，导出一串 key；换浏览器时把 key 粘回去点恢复，待办、备忘录、日记全部回来。"],
   ["添加", "输入框写完按回车。话里带时间会自动识别，例如「明天下午三点半开会」→ 存成「开会」，到期明天 15:30。"],
   ["打卡任务", "话里带「每天 / 每日」就自动变成打卡：第二天自动变回未完成，时间顺延。"],
   ["完成", "点左边方框打勾，再点一次取消；做完的会沉到列表下面。"],
@@ -947,16 +1225,1023 @@ function openTutorial() {
 
 /* ---------- 提示条 ---------- */
 let toastTimer = null;
-function toast(text, withUndo) {
+function toast(text, withUndo, action) {
   const t = $("toast");
   $("toastText").textContent = text;
   $("toastUndo").hidden = !withUndo;
+  toastAction = action || null;
   t.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.hidden = true; }, 5000);
+  toastTimer = setTimeout(() => { t.hidden = true; toastAction = null; }, 5000);
 }
 
 /* ---------- 事件 ---------- */
+/* ---------- 模块切换 ---------- */
+function switchMod(mod) {
+  currentMod = mod;
+  const btns = $("modNav").querySelectorAll("button");
+  for (let i = 0; i < btns.length; i++) btns[i].classList.toggle("on", btns[i].dataset.mod === mod);
+  $("view-todo").hidden = mod !== "todo";
+  $("view-memo").hidden = mod !== "memo";
+  $("view-diary").hidden = mod !== "diary";
+  if (mod === "todo") render();
+  else if (mod === "memo") renderMemos();
+  else renderDiary();
+}
+
+/* ---------- 备忘录 ---------- */
+function fmtMemoTime(ts) {
+  const d = new Date(ts), now = new Date();
+  if (dayKey(d) === dayKey(now)) return "今天";
+  if (dayKey(d) === dayKey(new Date(startOfDay(now).getTime() - 86400000))) return "昨天";
+  return (d.getMonth() + 1) + "月" + d.getDate() + "日";
+}
+
+function renderMemos() {
+  const list = $("memoList");
+  const empty = $("memoEmpty");
+  const memos = state.memos.slice().sort((a, b) => b.createdAt - a.createdAt);
+  empty.hidden = memos.length > 0;
+  list.innerHTML = memos.map((m) =>
+    '<div class="mrow" data-id="' + m.id + '">' +
+      '<div class="mtext">' + esc(m.text) + "</div>" +
+      '<div class="mtime">' + esc(fmtMemoTime(m.createdAt)) + "</div>" +
+      '<button class="mdel" data-del="' + m.id + '" title="删除">×</button>' +
+    "</div>").join("");
+}
+
+function addMemo(raw) {
+  const text = raw.trim();
+  if (!text) { toast("先写点内容", false); return; }
+  state.memos.unshift({ id: uid(), text: text, createdAt: Date.now(), updatedAt: Date.now() });
+  save();
+  renderMemos();
+  $("memoInput").value = "";
+  $("memoInput").focus();
+}
+
+function openMemoEditor(id) {
+  const memo = state.memos.find((m) => m.id === id);
+  if (!memo) return;
+  const mask = document.createElement("div");
+  mask.className = "mask";
+  mask.innerHTML = '<div class="modal"><h3>编辑备忘录</h3>' +
+    '<textarea class="memoedit" id="memoEditBox"></textarea>' +
+    '<div class="rowbtns"><button class="btn ghost" data-do="cancel">取消</button>' +
+    '<button class="btn primary" data-do="ok">保存</button></div></div>';
+  document.body.appendChild(mask);
+  const box = mask.querySelector("#memoEditBox");
+  box.value = memo.text;
+  box.focus();
+  mask.addEventListener("click", (e) => {
+    if (e.target === mask) { mask.remove(); return; }
+    const b = e.target.closest("[data-do]");
+    if (!b) return;
+    if (b.dataset.do === "cancel") { mask.remove(); return; }
+    const v = box.value.trim();
+    if (!v) {
+      state.memos = state.memos.filter((m) => m.id !== id);
+    } else {
+      memo.text = v;
+      memo.updatedAt = Date.now();
+    }
+    save();
+    renderMemos();
+    mask.remove();
+  });
+}
+
+/* ---------- 日记 ---------- */
+function diaryEntry(date) {
+  return state.diaries.find((x) => x.date === date);
+}
+
+function updateDiaryInfo() {
+  const n = $("diaryText").value.replace(/\s/g, "").length;
+  $("diaryInfo").textContent = n + " 字";
+}
+
+function loadDiary(date) {
+  diaryDate = date;
+  $("diaryDate").value = date;
+  const e = diaryEntry(date);
+  $("diaryText").value = e ? e.text : "";
+  updateDiaryInfo();
+  renderDiaryList();
+}
+
+function renderDiary() {
+  loadDiary(diaryDate || todayKey());
+}
+
+function saveDiary() {
+  const date = $("diaryDate").value || todayKey();
+  const text = $("diaryText").value.trim();
+  const e = diaryEntry(date);
+  if (!text) {
+    if (e) {
+      state.diaries = state.diaries.filter((x) => x.date !== date);
+      save();
+      renderDiaryList();
+      toast("已清空 " + date + " 的日记", false);
+    } else {
+      toast("还没写内容", false);
+    }
+    return;
+  }
+  if (e) {
+    e.text = text;
+    e.updatedAt = Date.now();
+  } else {
+    state.diaries.push({ date: date, text: text, updatedAt: Date.now() });
+  }
+  save();
+  loadDiary(date);
+  toast("日记已保存", false);
+}
+
+function renderDiaryList() {
+  const list = $("diaryList");
+  const empty = $("diaryEmpty");
+  const arr = state.diaries.slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+  empty.hidden = arr.length > 0;
+  list.innerHTML = arr.map((d) =>
+    '<div class="drow ' + (d.date === diaryDate ? "on" : "") + '" data-date="' + d.date + '">' +
+      '<div class="ddate">' + esc(d.date.slice(5)) + "</div>" +
+      '<div class="dprev">' + esc(d.text.replace(/\s+/g, " ").slice(0, 42)) + "</div>" +
+    "</div>").join("");
+}
+
+/* ---------- AI 生成日记 ---------- */
+const AI_STORE = "todoapp.ai";
+const AI_DEFAULT_BASE = "https://api.deepseek.com";
+const AI_OFFICIAL = "https://api.deepseek.com";
+const AI_SYS = "你是一个温暖、真诚的中文日记助手。请根据用户当天完成的事、没做完的事和随手记，" +
+  "写一段第一人称日记。要求：1) 3～5 句、120～200 字；2) 先具体写今天做了什么，只能用给定的事项，不要编造；" +
+  "3) 结尾给一句自然的鼓励，不要油腻；4) 不要自称 AI，不要写标题，只输出日记正文。";
+
+function loadAI() {
+  try {
+    const d = JSON.parse(localStorage.getItem(AI_STORE) || "{}");
+    return {
+      base: d.base || AI_DEFAULT_BASE,
+      model: d.model || "deepseek-chat",
+      key: d.key || ""
+    };
+  } catch (e) {
+    return { base: AI_DEFAULT_BASE, model: "deepseek-chat", key: "" };
+  }
+}
+
+function saveAI(cfg) {
+  try { localStorage.setItem(AI_STORE, JSON.stringify(cfg)); }
+  catch (e) { toast("保存失败：" + e.message, false); }
+}
+
+function openAISettings(first) {
+  const cfg = loadAI();
+  const mask = document.createElement("div");
+  mask.className = "mask";
+  mask.innerHTML = '<div class="modal"><h3>设置</h3>' +
+    '<div class="aihint">AI 用于三处：写日记、从备忘录提取待办、给单词写释义。填一次就存住，不用每次填。</div>' +
+    '<div class="aifield"><label>接口地址</label><input id="aiBase" maxlength="200"></div>' +
+    '<div class="aifield"><label>模型</label><input id="aiModel" maxlength="60"></div>' +
+    '<div class="aifield"><label>API 密钥（用中转地址时留空）</label><input id="aiKey" type="password" maxlength="200" placeholder="sk-... 或留空"></div>' +
+    '<div class="aihint">两种用法：① 填自己的 API 密钥（DeepSeek：platform.deepseek.com 创建，充几块钱）；② 只填别人搭好的中转地址，密钥留空。密钥只存在这台设备里。</div>' +
+    '<div class="rowbtns" style="justify-content:space-between">' +
+    '<button class="btn ghost sm" data-do="test">测试连接</button>' +
+    '<span style="display:flex;gap:8px">' +
+    '<button class="btn ghost" data-do="cancel">取消</button>' +
+    '<button class="btn primary" data-do="ok">保存</button></span></div></div>';
+  document.body.appendChild(mask);
+  mask.querySelector("#aiBase").value = cfg.base;
+  mask.querySelector("#aiModel").value = cfg.model;
+  mask.querySelector("#aiKey").value = cfg.key;
+  mask.addEventListener("click", async (e) => {
+    if (e.target === mask) { mask.remove(); return; }
+    const b = e.target.closest("[data-do]");
+    if (!b) return;
+    const base = mask.querySelector("#aiBase").value.trim() || AI_DEFAULT_BASE;
+    const model = mask.querySelector("#aiModel").value.trim() || "deepseek-chat";
+    const key = mask.querySelector("#aiKey").value.trim();
+
+    if (b.dataset.do === "cancel") { mask.remove(); return; }
+
+    if (b.dataset.do === "test") {
+      b.disabled = true;
+      b.textContent = "测试中…";
+      try {
+        const reply = await testAI(base, model, key);
+        toast("连接正常，模型回了一句：" + reply.slice(0, 20), false);
+      } catch (err) {
+        toast("连不上：" + err.message, false);
+      } finally {
+        b.disabled = false;
+        b.textContent = "测试连接";
+      }
+      return;
+    }
+
+    saveAI({ base: base, model: model, key: key });
+    mask.remove();
+    toast("AI 设置已保存", false);
+  });
+}
+
+async function testAI(base, model, key) {
+  const headers = { "Content-Type": "application/json" };
+  if (key) headers["Authorization"] = "Bearer " + key;
+  const res = await fetch(base.replace(/\/+$/, "") + "/chat/completions", {
+    method: "POST",
+    headers: headers,
+    body: JSON.stringify({
+      model: model,
+      max_tokens: 12,
+      messages: [{ role: "user", content: "只回复两个字：可以" }]
+    })
+  });
+  if (!res.ok) {
+    let detail = "";
+    try { detail = (await res.text()).slice(0, 100); } catch (e) { }
+    if (res.status === 401) throw new Error("密钥不对或已失效");
+    if (res.status === 402) throw new Error("账户余额不足");
+    if (res.status === 429) throw new Error("请求太频繁");
+    throw new Error("HTTP " + res.status + " " + detail);
+  }
+  const data = await res.json();
+  const text = (data.choices && data.choices[0] && data.choices[0].message &&
+    data.choices[0].message.content) || "";
+  return text.trim() || "可以";
+}
+
+function aiReady(cfg) {
+  // 填了密钥，或者用了一个非官方地址（中转），都算可用
+  return !!cfg.key || cfg.base.replace(/\/+$/, "") !== AI_OFFICIAL;
+}
+
+function aiHeaders(cfg) {
+  const h = { "Content-Type": "application/json" };
+  if (cfg.key) h["Authorization"] = "Bearer " + cfg.key;
+  return h;
+}
+
+function buildDiaryContext(date) {
+  const sameDay = (ms) => ms && dayKey(new Date(ms)) === date;
+  const done = [];
+  const left = [];
+  state.items.forEach((it) => {
+    if (it.done && (sameDay(it.doneAt) || sameDay(it.dueAt) || sameDay(it.createdAt))) done.push(it.text);
+    else if (!it.done && it.dueAt && dayKey(new Date(it.dueAt)) <= date) left.push(it.text);
+  });
+  const memos = state.memos.filter((m) => sameDay(m.createdAt)).map((m) => m.text);
+  const draft = $("diaryText").value.trim();
+
+  const lines = ["日期：" + date];
+  lines.push("今天完成的事：" + (done.length ? done.slice(0, 8).join("；") : "（没有记录）"));
+  if (left.length) lines.push("今天没做完的事：" + left.slice(0, 5).join("；"));
+  if (memos.length) lines.push("今天记下的备忘：" + memos.slice(0, 8).join("；"));
+  if (draft) lines.push("用户已经写了几句草稿，请在此基础上润色改写：" + draft);
+  return { text: lines.join("\n"), empty: !done.length && !memos.length && !draft };
+}
+
+async function aiDiary() {
+  const cfg = loadAI();
+  if (!aiReady(cfg)) {
+    openAISettings(true);
+    return;
+  }
+  const date = $("diaryDate").value || todayKey();
+  const ctx = buildDiaryContext(date);
+  if (ctx.empty) {
+    toast("今天还没有可写的内容：完成几条待办，或者记一条备忘录", false);
+    return;
+  }
+
+  const btn = $("aiBtn");
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "生成中…";
+  try {
+    const res = await fetch(cfg.base.replace(/\/+$/, "") + "/chat/completions", {
+      method: "POST",
+      headers: aiHeaders(cfg),
+      body: JSON.stringify({
+        model: cfg.model,
+        temperature: 0.85,
+        max_tokens: 700,
+        messages: [
+          { role: "system", content: AI_SYS },
+          { role: "user", content: ctx.text }
+        ]
+      })
+    });
+    if (!res.ok) {
+      let detail = "";
+      try { detail = (await res.text()).slice(0, 120); } catch (e) { }
+      if (res.status === 401) throw new Error("密钥不对或已失效");
+      if (res.status === 402) throw new Error("账户余额不足");
+      if (res.status === 429) throw new Error("请求太频繁，等几秒再试");
+      throw new Error("接口返回 " + res.status + " " + detail);
+    }
+    const data = await res.json();
+    const text = ((data.choices && data.choices[0] && data.choices[0].message &&
+      data.choices[0].message.content) || "").trim();
+    if (!text) throw new Error("接口没有返回内容");
+    $("diaryText").value = text;
+    updateDiaryInfo();
+    toast("写好了，看看合不合口味，再点保存", false);
+  } catch (err) {
+    const msg = err && err.message ? err.message : String(err);
+    toast("生成失败：" + (msg === "Failed to fetch"
+      ? "连不上接口，检查网络和地址（或在「设置」里改用中转地址）"
+      : msg), false);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+}
+
+/* ---------- AI 从备忘录里提取待办 ---------- */
+const EX_SYS = "你是一个任务整理助手。用户会给你一批备忘录，请挑出其中可以变成待办事项的内容，" +
+  "合并重复的，写成简洁明确的待办标题（不超过 15 字）。如果有明确或可推断的时间，给出截止时间。" +
+  "只输出 JSON 数组，不要解释，不要代码块。格式：[{\"text\":\"…\",\"due\":\"YYYY-MM-DD HH:mm\"}]，没有时间就写空字符串。";
+
+function parseSuggestions(raw) {
+  let s = String(raw || "").trim();
+  s = s.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  const start = s.indexOf("[");
+  const end = s.lastIndexOf("]");
+  if (start >= 0 && end > start) s = s.slice(start, end + 1);
+  try {
+    const arr = JSON.parse(s);
+    return (Array.isArray(arr) ? arr : [])
+      .filter((x) => x && typeof x.text === "string" && x.text.trim())
+      .map((x) => ({
+        text: String(x.text).trim().slice(0, 60),
+        due: typeof x.due === "string" ? x.due.trim() : ""
+      }))
+      .slice(0, 20);
+  } catch (e) {
+    return s.split(/\n+/)
+      .map((l) => l.replace(/^[\s\-*•\d.、]+/, "").trim())
+      .filter((t) => t && t.length <= 60 && !/^[[\]{}]/.test(t))
+      .map((t) => ({ text: t, due: "" }))
+      .slice(0, 12);
+  }
+}
+
+function dueInputValue(due) {
+  if (!due) return "";
+  const m = String(due).match(/(\d{4})-(\d{2})-(\d{2})[ T]?(\d{2}:\d{2})?/);
+  if (!m) return "";
+  return m[1] + "-" + m[2] + "-" + m[3] + "T" + (m[4] || "09:00");
+}
+
+function showExtractDialog(sugs) {
+  const mask = document.createElement("div");
+  mask.className = "mask";
+  const rows = sugs.map((s, i) => {
+    const exists = state.items.some((it) => it.text === s.text);
+    return '<div class="exrow">' +
+      '<input type="checkbox" id="ex' + i + '"' + (exists ? "" : " checked") + '>' +
+      '<div class="exbody">' +
+        '<input type="text" id="ext' + i + '" maxlength="60" value="' + esc(s.text) + '">' +
+        '<input type="datetime-local" id="exd' + i + '" value="' + esc(dueInputValue(s.due)) + '">' +
+      "</div></div>";
+  }).join("");
+
+  mask.innerHTML = '<div class="modal"><h3>AI 提取到的待办</h3>' +
+    '<div class="aihint">勾选要加的，标题和到期时间都能改；已经在待办列表里的默认不勾。</div>' +
+    '<div class="exlist">' + rows + "</div>" +
+    '<div class="rowbtns"><button class="btn ghost" data-do="cancel">取消</button>' +
+    '<button class="btn primary" data-do="ok">加到待办</button></div></div>';
+  document.body.appendChild(mask);
+
+  mask.addEventListener("click", (e) => {
+    if (e.target === mask) { mask.remove(); return; }
+    const b = e.target.closest("[data-do]");
+    if (!b) return;
+    if (b.dataset.do === "cancel") { mask.remove(); return; }
+
+    const added = [];
+    sugs.forEach((s, i) => {
+      if (!mask.querySelector("#ex" + i).checked) return;
+      const text = mask.querySelector("#ext" + i).value.trim();
+      if (!text) return;
+      const dv = mask.querySelector("#exd" + i).value;
+      const dueAt = dv ? new Date(dv).getTime() : 0;
+      const item = {
+        id: uid(),
+        text: text,
+        done: false,
+        createdAt: nextCreatedAt(),
+        dueAt: dueAt,
+        daily: false
+      };
+      state.items.unshift(item);
+      added.push(item.id);
+    });
+
+    mask.remove();
+    if (!added.length) { toast("没有选中任何一条", false); return; }
+    save();
+    render();
+    toast("已添加 " + added.length + " 条待办", true, function () {
+      state.items = state.items.filter((x) => added.indexOf(x.id) < 0);
+      save();
+      render();
+      toast("已撤回", false);
+    });
+  });
+}
+
+async function aiExtractTodos() {
+  const cfg = loadAI();
+  if (!aiReady(cfg)) { openAISettings(true); return; }
+  if (!state.memos.length) { toast("备忘录还是空的，先记几条", false); return; }
+
+  const btn = $("aiExtract");
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "分析中…";
+  try {
+    const memoText = state.memos.slice(0, 40).map((m, i) => (i + 1) + ". " + m.text).join("\n");
+    const res = await fetch(cfg.base.replace(/\/+$/, "") + "/chat/completions", {
+      method: "POST",
+      headers: aiHeaders(cfg),
+      body: JSON.stringify({
+        model: cfg.model,
+        temperature: 0.3,
+        max_tokens: 800,
+        messages: [
+          { role: "system", content: EX_SYS },
+          { role: "user", content: "今天是 " + todayKey() + "。备忘录：\n" + memoText }
+        ]
+      })
+    });
+    if (!res.ok) {
+      let detail = "";
+      try { detail = (await res.text()).slice(0, 120); } catch (e) { }
+      if (res.status === 401) throw new Error("密钥不对或已失效");
+      if (res.status === 402) throw new Error("账户余额不足");
+      if (res.status === 429) throw new Error("请求太频繁，等几秒再试");
+      throw new Error("接口返回 " + res.status + " " + detail);
+    }
+    const data = await res.json();
+    const raw = data.choices && data.choices[0] && data.choices[0].message
+      ? data.choices[0].message.content : "";
+    const sugs = parseSuggestions(raw);
+    if (!sugs.length) { toast("没从备忘录里找到可以提取的待办", false); return; }
+    showExtractDialog(sugs);
+  } catch (err) {
+    const msg = err && err.message ? err.message : String(err);
+    toast("提取失败：" + (msg === "Failed to fetch"
+      ? "连不上接口，检查网络和地址（或在「设置」里改用中转地址）"
+      : msg), false);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+}
+
+/* ---------- 备份：导出 / 导入 key ---------- */
+function b64encode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+function b64decode(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+function buildBackupKey() {
+  return "NW1." + b64encode(JSON.stringify({ v: 1, at: Date.now(), data: state }));
+}
+
+function parseBackup(text) {
+  let raw = String(text || "").trim();
+  if (!raw) throw new Error("先粘贴 key");
+  if (raw.indexOf("NW1.") === 0) raw = raw.slice(4);
+  raw = raw.replace(/\s+/g, "");
+  let obj;
+  try { obj = JSON.parse(b64decode(raw)); } catch (e) { throw new Error("key 不完整或格式不对"); }
+  const d = obj && obj.data ? obj.data : obj;
+  if (!d || !Array.isArray(d.items)) throw new Error("这个 key 里没有可恢复的数据");
+  return d;
+}
+
+function openBackup() {
+  const mask = document.createElement("div");
+  mask.className = "mask";
+  mask.innerHTML = '<div class="modal"><h3>备份与恢复</h3>' +
+    '<div class="aihint">现在是 ' + state.items.length + ' 条待办、' + state.memos.length +
+    ' 条备忘录、' + state.diaries.length + ' 篇日记。换浏览器或换手机时，把 key 粘过去就能全部搬过去。</div>' +
+    '<div class="keylab">① 导出：复制这串 key，存到网盘或发给自己</div>' +
+    '<textarea class="keybox" id="exportBox" readonly></textarea>' +
+    '<div class="rowbtns" style="margin-top:8px;justify-content:flex-start">' +
+    '<button class="btn ghost sm" data-do="copy">复制</button>' +
+    '<button class="btn ghost sm" data-do="down">下载成文件</button></div>' +
+    '<div class="keylab" style="margin-top:16px">② 导入：把 key 粘进来，点「恢复」</div>' +
+    '<textarea class="keybox" id="importBox" placeholder="粘贴备份 key"></textarea>' +
+    '<div class="rowbtns"><button class="btn ghost" data-do="cancel">关闭</button>' +
+    '<button class="btn primary" data-do="import">恢复</button></div></div>';
+  document.body.appendChild(mask);
+
+  const exp = mask.querySelector("#exportBox");
+  exp.value = buildBackupKey();
+
+  mask.addEventListener("click", (e) => {
+    if (e.target === mask) { mask.remove(); return; }
+    const b = e.target.closest("[data-do]");
+    if (!b) return;
+    const act = b.dataset.do;
+
+    if (act === "cancel") { mask.remove(); return; }
+
+    if (act === "copy") {
+      exp.select();
+      try {
+        navigator.clipboard.writeText(exp.value).then(function () {
+          toast("已复制，可以粘到微信或网盘", false);
+        }).catch(function () {
+          document.execCommand("copy");
+          toast("已复制", false);
+        });
+      } catch (err) {
+        document.execCommand("copy");
+        toast("已复制", false);
+      }
+      return;
+    }
+
+    if (act === "down") {
+      const blob = new Blob([exp.value], { type: "text/plain;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "个人事项管理工具-备份-" + todayKey() + ".txt";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      toast("已下载备份文件", false);
+      return;
+    }
+
+    if (act === "import") {
+      const text = mask.querySelector("#importBox").value;
+      if (!text.trim()) { toast("先把 key 粘进来", false); return; }
+      if (!confirm("恢复会覆盖当前的待办、备忘录和日记，确定吗？")) return;
+      try {
+        const d = parseBackup(text);
+        state.items = d.items || [];
+        state.memos = d.memos || [];
+        state.diaries = d.diaries || [];
+        state.group = d.group || "none";
+        state.rewardMuteDay = d.rewardMuteDay || "";
+        state.punishMuteDay = d.punishMuteDay || "";
+        save();
+        refreshDaily();
+        render();
+        renderMemos();
+        diaryDate = todayKey();
+        renderDiaryList();
+        mask.remove();
+        toast("已恢复 " + state.items.length + " 条待办、" + state.diaries.length + " 篇日记", false);
+      } catch (err) {
+        toast("恢复失败：" + (err.message || err), false);
+      }
+    }
+  });
+}
+
+/* ---------- 单词本 ---------- */
+const BASIC = new Set("the and for that with this from they have will been were what when which there their would about after before other into than then them these those some such only very more most much many also just like make made take took come came give gave find found tell told work call try ask need feel become leave put mean keep let begin seem help talk turn start show hear play run move live believe hold bring happen write provide sit stand lose pay meet include continue set learn change lead understand watch follow stop create speak read allow add spend grow open walk win offer remember love consider appear buy wait serve die send expect build stay fall cut reach kill remain suggest raise pass sell require report decide pull return explain hope develop carry break receive agree support hit produce eat cover catch draw choose cause point listen realize place close involve increase reduce describe contain determine whether while where whose doing being having said says going goes went take taken given though through during between among around against because since until unless within without across behind beyond below under above along toward towards upon".split(/\s+/));
+
+let currentMain = "list";
+
+function switchMain(main) {
+  currentMain = main;
+  const btns = $("mainNav").querySelectorAll("button");
+  for (let i = 0; i < btns.length; i++) btns[i].classList.toggle("on", btns[i].dataset.main === main);
+  $("view-list").hidden = main !== "list";
+  $("view-word").hidden = main !== "word";
+  $("view-stats").hidden = main !== "stats";
+  if (main === "word") renderWordbook();
+  else if (main === "stats") renderStats();
+}
+
+function renderWordbook() {
+  const list = $("wordList");
+  const empty = $("wordEmpty");
+  const due = dueWords().length;
+  $("wordStat").textContent = "单词本 " + state.words.length + " 个 · 待复习 " + due;
+  $("wordReview").textContent = due ? "开始复习 " + due : "开始复习";
+  empty.hidden = state.words.length > 0;
+  list.innerHTML = state.words.map((w) => {
+    const mean = ((w.pos ? w.pos + " " : "") + (w.meaning || "")).trim();
+    return '<div class="wrow" data-id="' + w.id + '">' +
+      '<div class="wbody">' +
+        '<div class="wword">' + esc(w.w) + "</div>" +
+        '<div class="wmean">' + (mean ? esc(mean) : "还没有释义，点右上角「AI 补全释义」") + "</div>" +
+        (w.example ? '<div class="wex">' + esc(w.example) + "</div>" : "") +
+      "</div>" +
+      '<button class="wdel" data-del="' + w.id + '" title="删除">×</button>' +
+      "</div>";
+  }).join("");
+}
+
+function extractWords(text) {
+  const raw = String(text || "").match(/[A-Za-z][A-Za-z'-]{2,}/g) || [];
+  const have = new Set(state.words.map((x) => x.w));
+  const out = [];
+  for (let i = 0; i < raw.length && out.length < 60; i++) {
+    const w = raw[i].toLowerCase().replace(/^[-']+|[-']+$/g, "");
+    if (w.length < 4) continue;
+    if (BASIC.has(w) || have.has(w) || out.indexOf(w) >= 0) continue;
+    out.push(w);
+  }
+  return out;
+}
+
+function showWordPick(words) {
+  const mask = document.createElement("div");
+  mask.className = "mask";
+  const rows = words.map((w, i) =>
+    '<label class="wcheckrow"><input type="checkbox" id="wk' + i + '" checked>' +
+    '<span class="wt">' + esc(w) + "</span></label>").join("");
+  mask.innerHTML = '<div class="modal"><h3>提取到 ' + words.length + ' 个单词</h3>' +
+    '<div class="aihint">按长度和常见度粗筛的，可能混进简单词，勾掉就行。加入后 AI 会自动写词性、释义和例句（没配 AI 就先存着）。</div>' +
+    '<div class="exlist">' + rows + "</div>" +
+    '<div class="rowbtns"><button class="btn ghost" data-do="cancel">取消</button>' +
+    '<button class="btn primary" data-do="ok">加入单词本</button></div></div>';
+  document.body.appendChild(mask);
+  mask.addEventListener("click", (e) => {
+    if (e.target === mask) { mask.remove(); return; }
+    const b = e.target.closest("[data-do]");
+    if (!b) return;
+    if (b.dataset.do === "cancel") { mask.remove(); return; }
+    const picked = [];
+    words.forEach((w, i) => {
+      if (mask.querySelector("#wk" + i).checked) picked.push(w);
+    });
+    mask.remove();
+    addWords(picked);
+  });
+}
+
+function addWords(list) {
+  if (!list.length) { toast("没有选中单词", false); return; }
+  const added = [];
+  list.forEach((w) => {
+    if (state.words.some((x) => x.w === w)) return;
+    state.words.unshift({ id: uid(), w: w, pos: "", meaning: "", example: "", addedAt: Date.now() });
+    added.push(w);
+  });
+  if (!added.length) { toast("这些词已经在单词本里了", false); return; }
+  save();
+  renderWordbook();
+  toast("已加入 " + added.length + " 个单词", false);
+  if (aiReady(loadAI())) {
+    aiAnalyzeWords(added);
+  } else {
+    toast("已加入。想自动写释义，先在「设置」里配 AI", false);
+  }
+}
+
+const WORD_SYS = "你是英语四六级词汇老师。根据给定的一组单词，给出词性、中文释义和一个简短例句。" +
+  "只输出 JSON 数组，不要解释，不要代码块。格式：[{\"word\":\"abandon\",\"pos\":\"v.\",\"meaning\":\"放弃；抛弃\",\"example\":\"He abandoned the plan.\"}]";
+
+function parseWordJson(raw) {
+  let s = String(raw || "").trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  const a = s.indexOf("[");
+  const b = s.lastIndexOf("]");
+  if (a >= 0 && b > a) s = s.slice(a, b + 1);
+  try {
+    const arr = JSON.parse(s);
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+async function aiAnalyzeWords(words) {
+  const cfg = loadAI();
+  if (!aiReady(cfg)) { openAISettings(true); return; }
+  const batch = (words || []).slice(0, 12);
+  if (!batch.length) return;
+
+  const btn = $("wordAiFill");
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "分析中…";
+  try {
+    const res = await fetch(cfg.base.replace(/\/+$/, "") + "/chat/completions", {
+      method: "POST",
+      headers: aiHeaders(cfg),
+      body: JSON.stringify({
+        model: cfg.model,
+        temperature: 0.3,
+        max_tokens: 1200,
+        messages: [
+          { role: "system", content: WORD_SYS },
+          { role: "user", content: batch.join(", ") }
+        ]
+      })
+    });
+    if (!res.ok) {
+      let detail = "";
+      try { detail = (await res.text()).slice(0, 120); } catch (e) { }
+      if (res.status === 401) throw new Error("密钥不对或已失效");
+      if (res.status === 402) throw new Error("账户余额不足");
+      throw new Error("接口返回 " + res.status + " " + detail);
+    }
+    const data = await res.json();
+    const content = data.choices && data.choices[0] && data.choices[0].message
+      ? data.choices[0].message.content : "";
+    const arr = parseWordJson(content);
+    let n = 0;
+    arr.forEach((item) => {
+      const key = String(item && item.word || "").toLowerCase().trim();
+      const w = state.words.find((x) => x.w === key);
+      if (!w) return;
+      w.pos = String(item.pos || "").slice(0, 12);
+      w.meaning = String(item.meaning || "").slice(0, 120);
+      w.example = String(item.example || "").slice(0, 160);
+      n++;
+    });
+    save();
+    renderWordbook();
+    toast(n ? "AI 补全了 " + n + " 个单词" : "AI 没返回可用的内容", false);
+  } catch (err) {
+    const msg = err && err.message ? err.message : String(err);
+    toast("分析失败：" + (msg === "Failed to fetch" ? "连不上接口，检查网络和地址" : msg), false);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+}
+
+/* ---------- 单词复习 ---------- */
+let rvQueue = [];
+let rvIndex = 0;
+let rvStats = { 0: 0, 1: 0, 2: 0 };
+
+function dueWords() {
+  const end = startOfDay(new Date()).getTime() + 86400000 - 1;
+  return state.words.filter((w) => !w.due || w.due <= end);
+}
+
+function startReview() {
+  const q = dueWords();
+  if (!q.length) { toast("今天没有要复习的单词，明天再来", false); return; }
+  rvQueue = q.slice(0, 30);
+  rvIndex = 0;
+  rvStats = { 0: 0, 1: 0, 2: 0 };
+  $("reviewPanel").hidden = false;
+  document.body.classList.add("reviewing");
+  const card = $("wordList").closest(".card");
+  if (card) card.hidden = true;
+  showReviewCard();
+  $("reviewPanel").scrollIntoView({ block: "nearest" });
+}
+
+function showReviewCard() {
+  if (rvIndex >= rvQueue.length) { finishReview(); return; }
+  const w = rvQueue[rvIndex];
+  $("rvProgress").textContent = (rvIndex + 1) + " / " + rvQueue.length;
+  $("rvWord").textContent = w.w;
+  const mean = ((w.pos ? w.pos + " " : "") + (w.meaning || "")).trim();
+  $("rvMean").textContent = mean || "（还没有释义，可以在单词本里点「AI 补全释义」）";
+  $("rvEx").textContent = w.example || "";
+  $("rvEx").hidden = !w.example;
+  $("rvBack").hidden = true;
+  $("rvHint").hidden = false;
+  $("rvActions").hidden = true;
+  $("rvDone").hidden = true;
+  $("rvCard").hidden = false;
+}
+
+function gradeWord(g) {
+  const w = rvQueue[rvIndex];
+  if (!w) return;
+  const now = Date.now();
+  const day = 86400000;
+  const base = startOfDay(new Date()).getTime();
+  w.last = now;
+  if (g === 2) {
+    w.stage = Math.min((w.stage || 0) + 1, 5);
+    const gaps = [0, 1, 2, 4, 7, 15];
+    w.due = base + gaps[w.stage] * day;
+    w.right = (w.right || 0) + 1;
+  } else if (g === 1) {
+    w.stage = Math.max(1, w.stage || 1);
+    w.due = base + day;
+    w.wrong = (w.wrong || 0) + 1;
+  } else {
+    w.stage = 0;
+    w.due = now + 10 * 60000;   // 过十分钟再出现
+    w.wrong = (w.wrong || 0) + 1;
+  }
+  rvStats[g]++;
+  rvIndex++;
+  save();
+  showReviewCard();
+}
+
+function finishReview() {
+  $("rvCard").hidden = true;
+  $("rvActions").hidden = true;
+  $("rvProgress").textContent = "";
+  $("rvDone").hidden = false;
+  $("rvDoneSub").textContent = "这次过了 " + rvQueue.length + " 个：认识 " + rvStats[2] +
+    "，模糊 " + rvStats[1] + "，不认识 " + rvStats[0];
+  renderWordbook();
+}
+
+function exitReview() {
+  $("reviewPanel").hidden = true;
+  document.body.classList.remove("reviewing");
+  const card = $("wordList").closest(".card");
+  if (card) card.hidden = false;
+  renderWordbook();
+}
+
+/* ---------- 统计 ---------- */
+function last7() {
+  const out = [];
+  const today = startOfDay(new Date()).getTime();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today - i * 86400000);
+    const key = dayKey(d);
+    const done = state.items.filter((it) => it.done && it.doneAt &&
+      dayKey(new Date(it.doneAt)) === key).length;
+    out.push({ key: key, label: (d.getMonth() + 1) + "/" + d.getDate(), done: done });
+  }
+  return out;
+}
+
+function doneStreak(days) {
+  let n = 0;
+  for (let i = days.length - 1; i >= 0; i--) {
+    if (days[i].done > 0) n++; else break;
+  }
+  return n;
+}
+
+function renderStats() {
+  const days = last7();
+  const total = state.items.length;
+  const done = state.items.filter((x) => x.done).length;
+  const rate = total ? Math.round((done / total) * 100) : 0;
+  const streak = doneStreak(days);
+
+  const cells = [
+    [String(days[6].done), "今天完成"],
+    [rate + "%", "总完成率"],
+    [String(streak), "连续天数"],
+    [String(dueWords().length), "待复习单词"]
+  ];
+  $("statGrid").innerHTML = cells.map((c) =>
+    '<div class="statcell"><div class="statnum">' + esc(c[0]) + "</div>" +
+    '<div class="statlab">' + esc(c[1]) + "</div></div>").join("");
+
+  const max = Math.max(1, Math.max.apply(null, days.map((d) => d.done)));
+  $("statBars").innerHTML = days.map((d) => {
+    const h = Math.max(2, Math.round((d.done / max) * 100));
+    return '<div class="sbarwrap">' +
+      '<div class="sbarnum">' + (d.done || "") + "</div>" +
+      '<div class="sbar" style="height:' + h + '%"></div>' +
+      '<div class="sbarlab">' + d.label + "</div></div>";
+  }).join("");
+
+  const weekW = state.words.filter((w) => w.addedAt && w.addedAt > Date.now() - 7 * 86400000).length;
+  const diaryDays = new Set(state.diaries.map((d) => d.date)).size;
+  const diaryWeek = state.diaries.filter((d) =>
+    d.date >= dayKey(new Date(Date.now() - 6 * 86400000))).length;
+
+  const rows = [
+    ["待办总数", total + " 条"],
+    ["已完成", done + " 条"],
+    ["本周新增单词", weekW + " 个"],
+    ["单词本总数", state.words.length + " 个"],
+    ["日记天数", diaryDays + " 天"],
+    ["本周日记", diaryWeek + " 篇"],
+    ["备忘录", state.memos.length + " 条"]
+  ];
+  $("statList").innerHTML = rows.map((r) =>
+    '<div class="statrow"><span>' + esc(r[0]) + "</span><b>" + esc(r[1]) + "</b></div>").join("");
+}
+
+/* ---------- 小窗挂件 ---------- */
+const WIDGET_KEY = "todoapp.widget";
+let widgetState = { on: true, min: true, x: null, y: null };
+
+function loadWidget() {
+  try {
+    const d = JSON.parse(localStorage.getItem(WIDGET_KEY) || "{}");
+    if (typeof d.on === "boolean") widgetState.on = d.on;
+    if (typeof d.min === "boolean") widgetState.min = d.min;
+    if (typeof d.x === "number") widgetState.x = d.x;
+    if (typeof d.y === "number") widgetState.y = d.y;
+  } catch (e) { }
+}
+
+function saveWidget() {
+  try { localStorage.setItem(WIDGET_KEY, JSON.stringify(widgetState)); } catch (e) { }
+}
+
+function renderWidget() {
+  const w = $("widget");
+  const mini = $("widgetMini");
+  if (!widgetState.on) { w.hidden = true; mini.hidden = true; return; }
+
+  const undone = state.items.filter((it) => !it.done);
+  const dueCount = dueWords().length;
+
+  if (widgetState.min) {
+    w.hidden = true;
+    mini.hidden = false;
+    mini.textContent = String(undone.length);
+    return;
+  }
+
+  mini.hidden = true;
+  w.hidden = false;
+  if (widgetState.x != null) {
+    w.style.left = widgetState.x + "px";
+    w.style.top = widgetState.y + "px";
+    w.style.right = "auto";
+    w.style.bottom = "auto";
+  }
+  $("widgetBody").innerHTML =
+    '<div><span class="wnum">' + undone.length + "</span> 件还没做</div>" +
+    undone.slice(0, 2).map((it) => '<div class="wline">· ' + esc(it.text) + "</div>").join("") +
+    '<div style="margin-top:6px">单词待复习 <b>' + dueCount + "</b> 个</div>" +
+    '<span class="wgo" data-go="todo">去看看 →</span>';
+}
+
+function toggleWidget() {
+  widgetState.on = !widgetState.on;
+  widgetState.min = false;
+  saveWidget();
+  renderWidget();
+  toast(widgetState.on ? "小窗已打开" : "小窗已关闭", false);
+}
+
+function wireWidget() {
+  loadWidget();
+  $("widgetToggle").addEventListener("click", toggleWidget);
+
+  $("widgetClose").addEventListener("click", () => {
+    widgetState.min = true;
+    saveWidget();
+    renderWidget();
+  });
+
+  $("widgetMini").addEventListener("click", () => {
+    widgetState.min = false;
+    saveWidget();
+    renderWidget();
+  });
+
+  $("widgetBody").addEventListener("click", (e) => {
+    const go = e.target.closest("[data-go]");
+    if (!go) return;
+    switchMain("list");
+    switchMod("todo");
+  });
+
+  let drag = null;
+  $("widgetHead").addEventListener("pointerdown", (e) => {
+    if (e.target.id === "widgetClose") return;
+    const r = $("widget").getBoundingClientRect();
+    drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+    try { $("widgetHead").setPointerCapture(e.pointerId); } catch (err) { }
+  });
+  window.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const w = $("widget");
+    const left = Math.max(4, Math.min(window.innerWidth - 200, e.clientX - drag.dx));
+    const top = Math.max(4, Math.min(window.innerHeight - 80, e.clientY - drag.dy));
+    w.style.left = left + "px";
+    w.style.top = top + "px";
+    w.style.right = "auto";
+    w.style.bottom = "auto";
+  });
+  window.addEventListener("pointerup", () => {
+    if (!drag) return;
+    drag = null;
+    const r = $("widget").getBoundingClientRect();
+    widgetState.x = Math.round(r.left);
+    widgetState.y = Math.round(r.top);
+    saveWidget();
+  });
+}
+
 function wire() {
   $("addBtn").addEventListener("click", () => addItem($("addInput").value));
   $("addInput").addEventListener("keydown", (e) => {
@@ -1040,9 +2325,99 @@ function wire() {
     await frog("restore", false);
   });
 
-  $("toastUndo").addEventListener("click", () => { undoDelete(); $("toast").hidden = true; });
+  $("toastUndo").addEventListener("click", () => {
+    const action = toastAction;
+    toastAction = null;
+    $("toast").hidden = true;
+    if (action) action(); else undoDelete();
+  });
   $("toast").addEventListener("click", (e) => { if (e.target === $("toast")) $("toast").hidden = true; });
   $("helpBtn").addEventListener("click", openTutorial);
+
+  // 模块切换
+  $("modNav").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-mod]");
+    if (b) switchMod(b.dataset.mod);
+  });
+
+  // 备忘录
+  $("memoAdd").addEventListener("click", () => addMemo($("memoInput").value));
+  $("memoInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addMemo($("memoInput").value);
+    }
+  });
+  $("memoList").addEventListener("click", (e) => {
+    const del = e.target.closest("[data-del]");
+    if (del) {
+      e.stopPropagation();
+      state.memos = state.memos.filter((m) => m.id !== del.dataset.del);
+      save();
+      renderMemos();
+      return;
+    }
+    const row = e.target.closest(".mrow");
+    if (row) openMemoEditor(row.dataset.id);
+  });
+  $("aiExtract").addEventListener("click", aiExtractTodos);
+  $("backupBtn").addEventListener("click", openBackup);
+
+  // 两层导航
+  $("mainNav").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-main]");
+    if (b) switchMain(b.dataset.main);
+  });
+
+  // 单词本
+  $("wordExtract").addEventListener("click", () => {
+    const text = $("wordInput").value;
+    if (!text.trim()) { toast("先粘贴一段英文", false); return; }
+    const words = extractWords(text);
+    if (!words.length) { toast("没找到可提取的新单词", false); return; }
+    showWordPick(words);
+  });
+  $("wordAiFill").addEventListener("click", () => {
+    const todo = state.words.filter((w) => !w.meaning).map((w) => w.w);
+    if (!todo.length) { toast("所有单词都有释义了", false); return; }
+    aiAnalyzeWords(todo);
+  });
+  $("wordList").addEventListener("click", (e) => {
+    const del = e.target.closest("[data-del]");
+    if (!del) return;
+    state.words = state.words.filter((w) => w.id !== del.dataset.del);
+    save();
+    renderWordbook();
+  });
+
+  // 单词复习
+  $("wordReview").addEventListener("click", startReview);
+  $("rvQuit").addEventListener("click", exitReview);
+  $("rvDoneBtn").addEventListener("click", exitReview);
+  $("rvCard").addEventListener("click", () => {
+    if ($("rvBack").hidden) {
+      $("rvBack").hidden = false;
+      $("rvHint").hidden = true;
+      $("rvActions").hidden = false;
+    }
+  });
+  $("rvActions").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-grade]");
+    if (b) gradeWord(Number(b.dataset.grade));
+  });
+
+  wireWidget();
+
+  // 日记
+  $("diaryDate").addEventListener("change", () => loadDiary($("diaryDate").value || todayKey()));
+  $("diaryText").addEventListener("input", updateDiaryInfo);
+  $("diarySave").addEventListener("click", saveDiary);
+  $("aiBtn").addEventListener("click", aiDiary);
+  $("setBtn").addEventListener("click", () => openAISettings(false));
+  $("diaryList").addEventListener("click", (e) => {
+    const row = e.target.closest("[data-date]");
+    if (row) loadDiary(row.dataset.date);
+  });
 
   $("list").addEventListener("click", (e) => {
     const row = e.target.closest(".row");
@@ -1113,13 +2488,13 @@ function wire() {
       search = ""; $("searchInput").value = "";
       render();
     }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
+    if (currentMod === "todo" && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
       e.preventDefault();
       $("searchBar").hidden = false;
       $("searchInput").focus();
       render();
     }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+    if (currentMod === "todo" && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
       undoDelete();
     }
   });
@@ -1131,16 +2506,36 @@ new MutationObserver(function () {
   document.body.classList.toggle("modal-open", !!document.querySelector(".mask"));
 }).observe(document.body, { childList: true });
 
-load();
 wire();
-refreshDaily();
-render();
-setTimeout(checkPunish, 300);
 setInterval(refreshDaily, 60000);
 document.addEventListener("visibilitychange", function () {
   if (!document.hidden) refreshDaily();
 });
 setInterval(() => { if (state.items.some((x) => x.dueAt)) render(); }, 60000);
+
+// 之前加过账号版本的话，把分账号存的数据搬回默认位置
+(function migrateBack() {
+  try {
+    if (localStorage.getItem(KEY)) return;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf(KEY + "::") === 0) {
+        const v = localStorage.getItem(k);
+        if (v) { localStorage.setItem(KEY, v); break; }
+      }
+    }
+  } catch (e) { }
+})();
+
+load();
+refreshDaily();
+render();
+renderWordbook();
+renderWidget();
+diaryDate = todayKey();
+switchMod("todo");
+switchMain("list");
+setTimeout(checkPunish, 300);
 
 // 第一次打开自动弹教程；之后点右下角的 ? 再看
 try {
